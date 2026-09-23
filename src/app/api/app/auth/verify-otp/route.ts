@@ -20,17 +20,18 @@ function noteFailure(mobile: string) {
 }
 
 export async function POST(request: NextRequest) {
-  let body: { mobile?: unknown; otp?: unknown; fcm_token?: unknown };
+  let body: { mobile?: unknown; otp?: unknown; fcm_token?: unknown; reqId?: unknown };
   try {
-    body = (await request.json()) as { mobile?: unknown; otp?: unknown; fcm_token?: unknown };
+    body = (await request.json()) as { mobile?: unknown; otp?: unknown; fcm_token?: unknown; reqId?: unknown };
   } catch {
     return NextResponse.json({ error: "Enter the mobile number and OTP." }, { status: 400 });
   }
 
+  if (!body || typeof body !== "object") return NextResponse.json({ error: "Enter the mobile number and OTP." }, { status: 400 });
   const mobile = normalizeMobile(body.mobile);
   const otp = normalizeOtp(body.otp);
   const fcmToken = typeof body.fcm_token === "string" ? body.fcm_token.trim().slice(0, 4096) : "";
-  if (!mobile || !otp) return NextResponse.json({ error: "Enter the mobile number and OTP." }, { status: 400 });
+  if (!mobile || !otp || typeof body.reqId !== "string" || !body.reqId || body.reqId.length > 200) return NextResponse.json({ error: "Enter the mobile number and OTP." }, { status: 400 });
   if (tooManyChecks(mobile)) {
     return NextResponse.json({ error: "Too many attempts. Wait a few minutes." }, { status: 429 });
   }
@@ -39,7 +40,7 @@ export async function POST(request: NextRequest) {
     const member = await findMember(mobile);
     if (!member) return NextResponse.json({ error: "This number cannot sign in." }, { status: 403 });
     if (!otpIsConfigured()) return NextResponse.json({ error: "OTP sending is not configured." }, { status: 503 });
-    const verified = await verifyLoginOtp(mobile, otp);
+    const verified = await verifyLoginOtp(mobile, otp, body.reqId);
     if (!verified) {
       noteFailure(mobile);
       return NextResponse.json({ error: "OTP is incorrect." }, { status: 401 });

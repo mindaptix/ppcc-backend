@@ -6,7 +6,6 @@ import { db } from "./db";
 
 const mobilePattern = /^[6-9]\d{9}$/;
 const sessionDays = 30;
-const sends = new Map<string, number[]>();
 
 export type AppUser = {
   id: string;
@@ -26,30 +25,43 @@ export function normalizeMobile(value: unknown) {
 }
 
 export function normalizeOtp(value: unknown) {
-  if (typeof value !== "string" || !/^\d{4,8}$/.test(value)) return "";
+  if (typeof value !== "string" || !/^\d{4}$/.test(value)) return "";
   return value;
 }
 
 export function otpIsConfigured() {
-  return Boolean(process.env.MSG91_AUTH_KEY?.trim() && process.env.MSG91_TEMPLATE_ID?.trim());
+  return Boolean(process.env.MSG91_WIDGET_ID?.trim() && process.env.MSG91_WIDGET_TOKEN?.trim()
+    && process.env.MSG91_WHATSAPP_ONLY === "true");
 }
 
-function msg91() {
-  const authkey = process.env.MSG91_AUTH_KEY?.trim() ?? "";
-  const templateId = process.env.MSG91_TEMPLATE_ID?.trim() ?? "";
-  if (!authkey || !templateId) return null;
-  return { authkey, templateId };
+async function widgetRequest(method: string, body: Record<string, string>) {
+  const response = await fetch(`https://control.msg91.com/api/v5/widget/${method}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ widgetId: process.env.MSG91_WIDGET_ID?.trim(),
+      tokenAuth: process.env.MSG91_WIDGET_TOKEN?.trim(), ...body }),
+    signal: AbortSignal.timeout(8000),
+    cache: "no-store",
+  });
+  const payload = await response.json().catch(() => null);
+  return response.ok && payload?.type === "success" ? payload : null;
 }
 
-export function tooManyOtpSends(mobile: string) {
-  const now = Date.now();
-  const recent = (sends.get(mobile) ?? []).filter((stamp) => now - stamp < 10 * 60 * 1000);
-  if (recent.length >= 3) {
-    sends.set(mobile, recent);
-    return true;
-  }
-  sends.set(mobile, [...recent, now]);
-  return false;
+export async function tooManyOtpSends(mobile: string) {
+  const result = await db().query(
+    `INSERT INTO member_otp_send_limits (mobile, sends, window_start, last_sent_at)
+     VALUES ($1, 1, now(), now())
+     ON CONFLICT (mobile) DO UPDATE SET
+       sends = CASE WHEN member_otp_send_limits.window_start < now() - interval '10 minutes'
+         THEN 1 ELSE member_otp_send_limits.sends + 1 END,
+       window_start = CASE WHEN member_otp_send_limits.window_start < now() - interval '10 minutes'
+         THEN now() ELSE member_otp_send_limits.window_start END,
+       last_sent_at = now()
+     WHERE member_otp_send_limits.last_sent_at < now() - interval '60 seconds'
+       AND (member_otp_send_limits.sends < 3 OR member_otp_send_limits.window_start < now() - interval '10 minutes')
+     RETURNING mobile`, [mobile],
+  );
+  return !result.rowCount;
 }
 
 export async function findMember(mobile: string) {
@@ -62,36 +74,51 @@ export async function findMember(mobile: string) {
   return result.rows[0] ?? null;
 }
 
-export async function sendLoginOtp(mobile: string) {
-  const config = msg91();
-  if (!config) return { ok: false as const, error: "OTP sending is not configured." };
-  const url = new URL("https://control.msg91.com/api/v5/otp");
-  url.searchParams.set("template_id", config.templateId);
-  url.searchParams.set("mobile", `91${mobile}`);
-  url.searchParams.set("otp_length", "6");
-  url.searchParams.set("otp_expiry", "10");
-  const response = await fetch(url, {
-    method: "POST",
-    headers: { authkey: config.authkey, accept: "application/json" },
-    signal: AbortSignal.timeout(8000),
-  });
-  const payload = (await response.json().catch(() => null)) as { type?: string } | null;
-  if (response.ok && payload?.type === "success") return { ok: true as const };
-  return { ok: false as const, error: "Could not send the OTP." };
+export async function sendLoginOtp(mobile: string, previousReqId = "") {
+  if (!otpIsConfigured()) return { ok: false as const, error: "WhatsApp OTP is not configured." };
+  if (previousReqId) {
+    // Claim the resend before calling the provider to enforce a shared cooldown.
+    const claim = await db().query(
+      `UPDATE member_otp_challenges SET last_sent_at = now()
+       WHERE mobile = $1 AND req_id = $2 AND expires_at > now()
+       AND last_sent_at < now() - interval '60 seconds' RETURNING req_id`,
+      [mobile, previousReqId],
+    );
+    if (!claim.rowCount) return { ok: false as const, error: "Wait 60 seconds or request a new OTP." };
+    const payload = await widgetRequest("retryOtp", { reqId: previousReqId, retryChannel: "12" });
+    if (!payload) return { ok: false as const, error: "Could not resend the WhatsApp OTP." };
+    return { ok: true as const, reqId: previousReqId };
+  }
+  // Initial delivery uses the WhatsApp-only widget configured in MSG91.
+  const payload = await widgetRequest("sendOtpMobile", { identifier: `91${mobile}` });
+  const reqId = payload?.reqId ?? payload?.message;
+  if (typeof reqId !== "string" || !reqId) return { ok: false as const, error: "Could not send the WhatsApp OTP." };
+  await db().query(
+    `INSERT INTO member_otp_challenges (mobile, req_id, expires_at)
+     VALUES ($1, $2, now() + interval '10 minutes')
+     ON CONFLICT (mobile) DO UPDATE SET req_id = EXCLUDED.req_id,
+     expires_at = EXCLUDED.expires_at, attempts = 0, last_sent_at = now()`,
+    [mobile, reqId],
+  );
+  return { ok: true as const, reqId };
 }
 
-export async function verifyLoginOtp(mobile: string, otp: string) {
-  const authkey = process.env.MSG91_AUTH_KEY?.trim() ?? "";
-  if (!authkey) return false;
-  const url = new URL("https://control.msg91.com/api/v5/otp/verify");
-  url.searchParams.set("mobile", `91${mobile}`);
-  url.searchParams.set("otp", otp);
-  const response = await fetch(url, {
-    headers: { authkey, accept: "application/json" },
-    signal: AbortSignal.timeout(8000),
-  });
-  const payload = (await response.json().catch(() => null)) as { type?: string; message?: string } | null;
-  return Boolean(response.ok && (payload?.type === "success" || payload?.message === "OTP verified success"));
+export async function verifyLoginOtp(mobile: string, otp: string, reqId: string) {
+  if (!otpIsConfigured()) return false;
+  // Bind provider request IDs to the number we sent to, across server instances.
+  const claim = await db().query(
+    `UPDATE member_otp_challenges SET attempts = attempts + 1
+     WHERE mobile = $1 AND req_id = $2 AND expires_at > now() AND attempts < 5
+     RETURNING req_id`, [mobile, reqId],
+  );
+  if (!claim.rowCount) return false;
+  const payload = await widgetRequest("verifyOtp", { reqId, otp });
+  if (!payload) return false;
+  const consumed = await db().query(
+    `DELETE FROM member_otp_challenges WHERE mobile = $1 AND req_id = $2 AND expires_at > now()
+     RETURNING req_id`, [mobile, reqId],
+  );
+  return Boolean(consumed.rowCount);
 }
 
 export async function getAppUser(request: NextRequest) {

@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "db:setup": "node scripts/bootstrap-db.mjs"
+    "db:setup": "node scripts/bootstrap-db.mjs",
+    "test:auth": "node --test tests/app-auth.test.mjs"
   },
   "dependencies": {
     "busboy": "^1.6.0",

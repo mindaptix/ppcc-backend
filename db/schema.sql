@@ -64,3 +64,18 @@ CREATE TABLE IF NOT EXISTS member_sessions (
 );
 
 CREATE INDEX IF NOT EXISTS member_sessions_expires_at_idx ON member_sessions (expires_at);
+
+CREATE TABLE IF NOT EXISTS member_otp_challenges (
+  mobile text PRIMARY KEY REFERENCES members (mobile) ON DELETE CASCADE,
+  req_id text NOT NULL,
+  attempts integer NOT NULL DEFAULT 0,
+  last_sent_at timestamptz NOT NULL DEFAULT now(),
+  expires_at timestamptz NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS member_otp_send_limits (
+  mobile text PRIMARY KEY REFERENCES members (mobile) ON DELETE CASCADE,
+  sends integer NOT NULL,
+  window_start timestamptz NOT NULL,
+  last_sent_at timestamptz NOT NULL
+);
