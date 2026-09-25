@@ -21,7 +21,7 @@ export function staticAdminEmail() {
 export function matchesStaticAdmin(email: string, password: string) {
   const expectedEmail = staticAdminEmail();
   const expectedPassword = process.env.PORTAL_ADMIN_PASSWORD ?? "";
-  if (!expectedEmail.includes("@") || expectedPassword.length < 12) return false;
+  if (!expectedEmail.includes("@") || expectedPassword.length < 8) return false;
   const emailMatch = email.length === expectedEmail.length
     && timingSafeEqual(Buffer.from(email), Buffer.from(expectedEmail));
   const passwordMatch = password.length === expectedPassword.length
