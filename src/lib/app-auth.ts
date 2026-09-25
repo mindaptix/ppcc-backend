@@ -2,7 +2,6 @@ import "server-only";
 import { createHash, randomBytes } from "node:crypto";
 import { NextRequest } from "next/server";
 import { punjabDistricts } from "./portal-data";
-import { staticMember } from "./static-portal";
 import { db } from "./db";
 
 const mobilePattern = /^[6-9]\d{9}$/;
@@ -66,9 +65,6 @@ export async function tooManyOtpSends(mobile: string) {
 }
 
 export async function findMember(mobile: string) {
-  if (staticMember(mobile)) {
-    return { id: `static-${mobile}`, name: null, mobile, email: null, district: null, constituency: null, role: null };
-  }
   const result = await db().query<AppUser>(
     `SELECT id, name, mobile, email, district, constituency, role
      FROM members

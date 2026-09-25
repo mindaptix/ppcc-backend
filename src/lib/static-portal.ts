@@ -2,7 +2,7 @@ export const staticMembers = [
   { mobile: "7018319344", created_at: "2026-09-25T00:00:00.000Z" },
   { mobile: "8376932843", created_at: "2026-09-25T00:00:00.000Z" },
   { mobile: "7591033165", created_at: "2026-09-25T00:00:00.000Z" },
-  { mobile: "9464506199", created_at: "2026-09-25T00:00:00.000Z" },
+  { mobile: "8264968199", created_at: "2026-09-25T00:00:00.000Z" },
 ] as const;
 
 export const staticNotices = [
@@ -16,7 +16,3 @@ export const staticNotices = [
     mobiles: staticMembers.map((member) => member.mobile),
   },
 ];
-
-export function staticMember(mobile: string) {
-  return staticMembers.find((member) => member.mobile === mobile) ?? null;
-}

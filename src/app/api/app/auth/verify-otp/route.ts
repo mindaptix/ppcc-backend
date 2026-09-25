@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const member = await findMember(mobile);
-    if (!member) return NextResponse.json({ error: "This number cannot sign in." }, { status: 403 });
+    if (!member) return NextResponse.json({ error: "You don't have permission to sign in." }, { status: 403 });
     if (!otpIsConfigured()) return NextResponse.json({ error: "OTP sending is not configured." }, { status: 503 });
     const verified = await verifyLoginOtp(mobile, otp, body.reqId);
     if (!verified) {

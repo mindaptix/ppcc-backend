@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const member = await findMember(mobile);
-    if (!member) return NextResponse.json({ error: "This number cannot sign in." }, { status: 403 });
+    if (!member) return NextResponse.json({ error: "You don't have permission to sign in." }, { status: 403 });
     if (await tooManyOtpSends(mobile)) {
       return NextResponse.json({ error: "Too many OTP requests. Wait a few minutes." }, { status: 429 });
     }
