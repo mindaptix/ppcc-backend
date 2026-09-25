@@ -93,6 +93,8 @@ h1, h2, h3, p { margin: 0; }
   flex-shrink: 0;
 }
 
+.sidebar-bar { display: contents; }
+.menu-toggle, .nav-backdrop { display: none; }
 .sidebar nav { display: flex; flex-direction: column; gap: 2px; }
 .nav-link {
   display: flex;
@@ -527,23 +529,6 @@ legend { font-size: 13px; font-weight: 600; margin-bottom: 8px; }
 }
 .logout:hover { color: #046a38; }
 
-.login-screen {
-  min-height: 100dvh;
-  display: grid;
-  place-items: center;
-  padding: calc(24px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom));
-}
-.login-card {
-  width: min(400px, 100%);
-  background: #fff;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  padding: 24px;
-}
-.login-card .brand-mark { margin-bottom: 14px; }
-.login-card h1 { font-size: 22px; font-weight: 600; margin-top: 0; }
-.login-card > p { color: var(--muted); margin: 4px 0 18px; }
-.login-card label { margin-bottom: 12px; }
 .password-field { position: relative; display: block; }
 .password-field input { padding-right: 42px; }
 .password-field button {
@@ -558,16 +543,6 @@ legend { font-size: 13px; font-weight: 600; margin-bottom: 8px; }
   display: grid;
   place-items: center;
   padding: 0;
-}
-.login-card .btn { width: 100%; margin-top: 4px; }
-.login-error {
-  color: #8a2b2b;
-  background: #fdf2f2;
-  border: 1px solid #f0d4d4;
-  border-radius: 4px;
-  padding: 8px 10px;
-  margin-bottom: 12px;
-  font-size: 13px;
 }
 
 .visually-hidden {
@@ -590,30 +565,57 @@ legend { font-size: 13px; font-weight: 600; margin-bottom: 8px; }
 @media (max-width: 760px) {
   .app { display: block; }
   .sidebar {
-    position: static;
+    position: sticky;
+    top: 4px;
+    z-index: 20;
     width: 100%;
     height: auto;
-    padding: calc(8px + env(safe-area-inset-top)) 12px 8px;
+    display: block;
+    background: #fff;
+    padding: calc(4px + env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) 4px max(8px, env(safe-area-inset-left));
     border-right: 0;
     border-bottom: 1px solid var(--line);
   }
-  .brand { padding-bottom: 10px; }
-  .sidebar nav {
-    flex-direction: row;
-    gap: 6px;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    padding-bottom: 2px;
-  }
-  .sidebar nav::-webkit-scrollbar { display: none; }
-  .nav-link {
-    white-space: nowrap;
-    min-height: 44px;
-    padding: 0 12px;
+  .sidebar-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .brand { padding: 4px 8px; min-width: 0; }
+  .menu-toggle {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
     flex-shrink: 0;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--ink);
   }
-  .nav-link.active { box-shadow: none; }
+  .menu-toggle:hover { background: #f4f7f5; color: #046a38; }
+  .nav-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    border: 0;
+    background: rgba(23, 32, 51, 0.4);
+  }
+  .sidebar nav {
+    display: none;
+    position: absolute;
+    z-index: 2;
+    top: 100%;
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    gap: 2px;
+    max-height: min(70dvh, 480px);
+    overflow: auto;
+    padding: 8px 12px calc(12px + env(safe-area-inset-bottom));
+    background: #fff;
+    border-bottom: 1px solid var(--line);
+    box-shadow: 0 16px 32px rgba(23, 32, 51, 0.12);
+  }
+  .sidebar.open nav { display: flex; }
+  .nav-link { min-height: 44px; }
   .sidebar-user { display: none; }
   .main { margin-left: 0; width: 100%; padding-top: 0; }
   .topbar {
@@ -624,9 +626,12 @@ legend { font-size: 13px; font-weight: 600; margin-bottom: 8px; }
     padding-right: max(16px, env(safe-area-inset-right));
     gap: 8px;
   }
+  .topbar-user { min-width: 0; max-width: 58%; }
+  .topbar-user > div { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .topbar-user small { display: none; }
-  .topbar-logout { display: inline-flex; }
-  .crumb { min-width: 0; }
+  .topbar-logout { display: inline-flex; flex-shrink: 0; }
+  .crumb { min-width: 0; overflow: hidden; }
+  .crumb strong, .page-intro h1, .page-intro p, .panel-head h2 { overflow-wrap: anywhere; }
   .content {
     padding: 16px;
     padding-left: max(16px, env(safe-area-inset-left));
@@ -648,9 +653,35 @@ legend { font-size: 13px; font-weight: 600; margin-bottom: 8px; }
   .panel-foot { flex-direction: column; align-items: stretch; }
   .panel-foot .btn, .panel-foot .text-button { width: 100%; justify-content: center; }
   .foot-gap { display: none; }
-  .data { min-width: 520px; }
-  .table-panel, .panel.table-panel { -webkit-overflow-scrolling: touch; }
-  .folders ul { padding-left: 12px; }
+  .push-unlock { flex-direction: column; align-items: stretch; }
+  .push-unlock .btn { width: 100%; margin: 0; }
+  .data { min-width: 0; }
+  .data thead { display: none; }
+  .data, .data tbody, .data tr, .data td { display: block; width: 100%; }
+  .data tr { padding: 12px 16px; border-bottom: 1px solid #eef1f4; }
+  .data td {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    border: 0;
+    padding: 4px 0;
+    text-align: right;
+    overflow-wrap: anywhere;
+  }
+  .data td::before {
+    content: attr(data-label);
+    color: var(--muted);
+    font-weight: 600;
+    text-align: left;
+    flex-shrink: 0;
+  }
+  .data td.empty { display: block; text-align: center; }
+  .data td.empty::before { content: none; }
+  .data tr:hover td { background: transparent; }
+  .table-panel, .panel.table-panel { overflow-x: visible; }
+  .file-list strong { white-space: normal; overflow-wrap: anywhere; text-overflow: unset; }
+  .folder-row { align-items: flex-start; }
+  .folder-row strong { min-width: 0; overflow-wrap: anywhere; }
   .folders ul li { grid-template-columns: 16px minmax(0, 1fr); }
   .folders ul small { grid-column: 2; }
   .toast {
@@ -677,4 +708,6 @@ legend { font-size: 13px; font-weight: 600; margin-bottom: 8px; }
   .stats { grid-template-columns: 1fr; }
   .stat strong { font-size: 22px; }
   .page-intro h1 { font-size: 20px; }
+  .topbar-user > div { display: none; }
+  .topbar-user { max-width: none; }
 }

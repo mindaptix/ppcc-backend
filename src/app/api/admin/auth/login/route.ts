@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { hashPassword, verifyPassword } from "@/lib/password";
-import { adminCookie, hashToken, newSessionToken, sessionSeconds } from "@/lib/admin-session";
+import { adminCookie, hashToken, matchesStaticAdmin, newSessionToken, sessionSeconds, staticSessionToken } from "@/lib/admin-session";
 
 export const runtime = "nodejs";
 
@@ -23,9 +23,6 @@ export async function POST(request: NextRequest) {
   if (!sameOrigin(request)) {
     return NextResponse.json({ error: "Request origin is not allowed." }, { status: 403 });
   }
-  if (!process.env.DATABASE_URL) {
-    return NextResponse.json({ error: "Database is not connected." }, { status: 503 });
-  }
 
   let body: { email?: unknown; password?: unknown };
   try {
@@ -37,6 +34,22 @@ export async function POST(request: NextRequest) {
   const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
   const password = typeof body.password === "string" ? body.password : "";
   if (!emailPattern.test(email) || email.length > 254 || password.length < 12 || password.length > 128) {
+    return NextResponse.json({ error: "Email or password is incorrect." }, { status: 401 });
+  }
+
+  if (matchesStaticAdmin(email, password)) {
+    const response = NextResponse.json({ ok: true });
+    response.cookies.set(adminCookie, staticSessionToken(), {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      path: "/",
+      maxAge: sessionSeconds,
+    });
+    return response;
+  }
+
+  if (!process.env.DATABASE_URL) {
     return NextResponse.json({ error: "Email or password is incorrect." }, { status: 401 });
   }
 

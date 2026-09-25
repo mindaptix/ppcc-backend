@@ -1,22 +1,28 @@
 import { db } from "@/lib/db";
-import { PageIntro } from "@/components/page-intro";
+import { staticMembers } from "@/lib/static-portal";
+import { AddMemberForm } from "@/components/add-member-form";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Members" };
 
 export default async function MembersPage() {
-  const result = await db().query<{ mobile: string; created_at: Date }>(
-    `SELECT mobile, created_at FROM members ORDER BY created_at DESC, mobile`,
-  );
-  const members = result.rows;
+  let saved: { mobile: string; created_at: Date | string }[] = [];
+  try {
+    const result = await db().query<{ mobile: string; created_at: Date }>(
+      `SELECT mobile, created_at FROM members ORDER BY created_at DESC, mobile`,
+    );
+    saved = result.rows;
+  } catch {
+    saved = [];
+  }
+  const known = new Set(saved.map((member) => member.mobile));
+  const members = [...staticMembers.filter((member) => !known.has(member.mobile)), ...saved];
 
   return (
     <>
-      <PageIntro
-        title="Members"
-        text="Only these mobile numbers can sign in to the app. The member enters the number, receives an OTP, and then opens the app."
-      />
-      <section className="panel table-panel">
+      <div className="stack">
+        <AddMemberForm />
+        <section className="panel table-panel">
         <div className="panel-head">
           <h2>App login numbers</h2>
         </div>
@@ -37,8 +43,8 @@ export default async function MembersPage() {
             ) : (
               members.map((member) => (
                 <tr key={member.mobile}>
-                  <td>{member.mobile}</td>
-                  <td>
+                  <td data-label="Mobile">{member.mobile}</td>
+                  <td data-label="Saved">
                     {new Date(member.created_at).toLocaleDateString("en-IN", {
                       day: "numeric",
                       month: "short",
@@ -54,6 +60,7 @@ export default async function MembersPage() {
           {members.length} {members.length === 1 ? "number" : "numbers"}
         </p>
       </section>
+      </div>
     </>
   );
 }

@@ -17,7 +17,8 @@ export type IconName =
   | "save"
   | "search"
   | "folder"
-  | "video";
+  | "video"
+  | "menu";
 
 const paths: Record<IconName, ReactNode> = {
   home: (
@@ -123,6 +124,11 @@ const paths: Record<IconName, ReactNode> = {
     <>
       <rect x="3.5" y="6" width="12" height="12" rx="1.5" />
       <path d="m15.5 10 5-2.5v9L15.5 14" />
+    </>
+  ),
+  menu: (
+    <>
+      <path d="M4 7h16M4 12h16M4 17h16" />
     </>
   ),
 };

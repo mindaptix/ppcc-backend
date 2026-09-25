@@ -30,14 +30,17 @@ export function LoginForm() {
   }
 
   return (
-    <form className="login-card" onSubmit={submit}>
-      <span className="brand-mark">P</span>
-      <h1>PPCC Admin</h1>
-      <p>Punjab Pradesh Congress Committee</p>
-      {error && <div className="login-error">{error}</div>}
-      <label>
+    <form className="flex flex-col justify-center bg-white px-5 py-6 sm:px-7 md:px-9 md:py-10" onSubmit={submit}>
+      <p className="mb-2 text-xs font-bold tracking-[0.08em] text-[#046a38] uppercase">PPCC Admin</p>
+      <h2 className="text-[1.7rem] font-semibold">Sign in</h2>
+      <p className="mt-2 mb-5 text-sm text-[#5d6b7a]">Use the office email and password issued for this portal.</p>
+      {error && (
+        <div className="mb-3 rounded border border-[#f0d4d4] bg-[#fdf2f2] px-2.5 py-2 text-[13px] text-[#8a2b2b]">{error}</div>
+      )}
+      <label className="mb-3.5">
         Email
         <input
+          className="text-base"
           name="email"
           type="email"
           autoComplete="username"
@@ -46,10 +49,11 @@ export function LoginForm() {
           required
         />
       </label>
-      <label>
+      <label className="mb-3.5">
         Password
-        <span className="password-field">
+        <span className="relative block">
           <input
+            className="pr-11 text-base"
             name="password"
             type={showPassword ? "text" : "password"}
             autoComplete="current-password"
@@ -58,6 +62,7 @@ export function LoginForm() {
             required
           />
           <button
+            className="absolute top-1.5 right-0.5 grid h-[calc(100%-6px)] w-9 place-items-center border-0 bg-transparent p-0 text-[#5d6b7a]"
             type="button"
             aria-label={showPassword ? "Hide password" : "Show password"}
             aria-pressed={showPassword}
@@ -67,7 +72,7 @@ export function LoginForm() {
           </button>
         </span>
       </label>
-      <button className="btn primary" type="submit" disabled={busy}>
+      <button className="btn primary mt-1 w-full" type="submit" disabled={busy}>
         {busy ? "Signing in…" : "Sign in"}
       </button>
     </form>

@@ -44,10 +44,10 @@ export function MembersDirectory() {
           ) : (
             rows.map((member) => (
               <tr key={`${member.name}-${member.district}`}>
-                <td>{member.name}</td>
-                <td>{member.role}</td>
-                <td>{member.district}</td>
-                <td>{member.updated}</td>
+                <td data-label="Name">{member.name}</td>
+                <td data-label="Role">{member.role}</td>
+                <td data-label="District">{member.district}</td>
+                <td data-label="Updated">{member.updated}</td>
               </tr>
             ))
           )}

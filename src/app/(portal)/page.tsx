@@ -57,10 +57,10 @@ export default function DashboardPage() {
             <tbody>
               {notices.map((notice) => (
                 <tr key={notice.title}>
-                  <td>{notice.title}</td>
-                  <td>{notice.district}</td>
-                  <td>{notice.date}</td>
-                  <td>
+                  <td data-label="Title">{notice.title}</td>
+                  <td data-label="District">{notice.district}</td>
+                  <td data-label="Date">{notice.date}</td>
+                  <td data-label="Status">
                     <span className={notice.status === "Sent" ? "status sent" : "status draft"}>{notice.status}</span>
                   </td>
                 </tr>

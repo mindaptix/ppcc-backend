@@ -20,10 +20,10 @@ export default function MeetingsPage() {
           <tbody>
             {meetings.map((meeting) => (
               <tr key={meeting.title}>
-                <td>{meeting.title}</td>
-                <td>{meeting.when}</td>
-                <td>{meeting.place}</td>
-                <td>{meeting.district}</td>
+                <td data-label="Meeting">{meeting.title}</td>
+                <td data-label="When">{meeting.when}</td>
+                <td data-label="Where">{meeting.place}</td>
+                <td data-label="District">{meeting.district}</td>
               </tr>
             ))}
           </tbody>

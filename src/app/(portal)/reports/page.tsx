@@ -20,10 +20,10 @@ export default function ReportsPage() {
           <tbody>
             {monthlyReports.map((row) => (
               <tr key={row.month}>
-                <td>{row.month}</td>
-                <td>{row.notices}</td>
-                <td>{row.documents}</td>
-                <td>{row.meetings}</td>
+                <td data-label="Month">{row.month}</td>
+                <td data-label="Notices">{row.notices}</td>
+                <td data-label="Documents">{row.documents}</td>
+                <td data-label="Meetings">{row.meetings}</td>
               </tr>
             ))}
           </tbody>

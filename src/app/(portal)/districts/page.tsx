@@ -19,9 +19,9 @@ export default function DistrictsPage() {
           <tbody>
             {districtRows.map((row) => (
               <tr key={row.name}>
-                <td>{row.name}</td>
-                <td>{row.members.toLocaleString("en-IN")}</td>
-                <td>
+                <td data-label="District">{row.name}</td>
+                <td data-label="Members">{row.members.toLocaleString("en-IN")}</td>
+                <td data-label="Office">
                   <span className={row.office === "Active" ? "status sent" : "status draft"}>{row.office}</span>
                 </td>
               </tr>
