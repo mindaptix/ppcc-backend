@@ -17,21 +17,12 @@ import {
   uploadDir,
 } from "@/lib/save-upload";
 import { videoMaxBytes } from "@/lib/upload-rules";
+import { isAllowedOrigin } from "@/lib/request-origin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const recentUploads = new Map<string, number[]>();
-
-function sameOrigin(request: NextRequest) {
-  const origin = request.headers.get("origin");
-  if (!origin) return false;
-  try {
-    return origin === new URL(process.env.APP_URL || request.nextUrl.origin).origin;
-  } catch {
-    return false;
-  }
-}
 
 function tooMany(adminId: string, count: number) {
   const now = Date.now();
@@ -58,7 +49,7 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  if (!sameOrigin(request)) return NextResponse.json({ error: "Request origin is not allowed." }, { status: 403 });
+  if (!isAllowedOrigin(request)) return NextResponse.json({ error: "Request origin is not allowed." }, { status: 403 });
   const session = await getAdminSession();
   if (!session) return NextResponse.json({ error: "Sign in required." }, { status: 401 });
   const contentType = request.headers.get("content-type") ?? "";

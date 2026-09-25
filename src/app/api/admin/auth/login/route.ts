@@ -2,25 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { hashPassword, verifyPassword } from "@/lib/password";
 import { adminCookie, hashToken, matchesStaticAdmin, newSessionToken, sessionSeconds, staticSessionToken } from "@/lib/admin-session";
+import { isAllowedOrigin } from "@/lib/request-origin";
 
 export const runtime = "nodejs";
 
 let dummyHash = "";
 const emailPattern = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/;
 
-function sameOrigin(request: NextRequest) {
-  const origin = request.headers.get("origin");
-  if (!origin) return false;
-  try {
-    const expected = process.env.APP_URL || request.nextUrl.origin;
-    return origin === new URL(expected).origin;
-  } catch {
-    return false;
-  }
-}
-
 export async function POST(request: NextRequest) {
-  if (!sameOrigin(request)) {
+  if (!isAllowedOrigin(request)) {
     return NextResponse.json({ error: "Request origin is not allowed." }, { status: 403 });
   }
 

@@ -3,6 +3,7 @@ import { cert, getApps, initializeApp } from "firebase-admin/app";
 import { getMessaging } from "firebase-admin/messaging";
 import type { NextRequest } from "next/server";
 import { sessionCookie, validSession } from "./push-session";
+import { isAllowedOrigin } from "./request-origin";
 
 export function pushConfig() {
   const projectId = process.env.FIREBASE_PROJECT_ID?.trim();
@@ -18,8 +19,7 @@ export function pushConfig() {
 }
 
 export function isSameOrigin(request: NextRequest) {
-  const expected = process.env.APP_URL || request.nextUrl.origin;
-  try { return request.headers.get("origin") === new URL(expected).origin; } catch { return false; }
+  return isAllowedOrigin(request);
 }
 
 export function isPushAdmin(request: NextRequest) {

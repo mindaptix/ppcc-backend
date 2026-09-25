@@ -2,22 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/admin-session";
 import { normalizeMobile } from "@/lib/app-auth";
 import { db } from "@/lib/db";
+import { isAllowedOrigin } from "@/lib/request-origin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-function sameOrigin(request: NextRequest) {
-  const origin = request.headers.get("origin");
-  if (!origin) return false;
-  try {
-    return origin === new URL(process.env.APP_URL || request.nextUrl.origin).origin;
-  } catch {
-    return false;
-  }
-}
-
 export async function POST(request: NextRequest) {
-  if (!sameOrigin(request)) return NextResponse.json({ error: "Request origin is not allowed." }, { status: 403 });
+  if (!isAllowedOrigin(request)) return NextResponse.json({ error: "Request origin is not allowed." }, { status: 403 });
   const session = await getAdminSession();
   if (!session) return NextResponse.json({ error: "Sign in required." }, { status: 401 });
 
